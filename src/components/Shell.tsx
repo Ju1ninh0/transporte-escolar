@@ -19,6 +19,7 @@ const MENU: Record<Perfil, Item[]> = {
     { href: "/admin", icon: "📊", label: "Painel" },
     { href: "/admin/alunos", icon: "🎒", label: "Alunos" },
     { href: "/admin/responsaveis", icon: "👪", label: "Responsáveis" },
+    { href: "/admin/financeiro", icon: "💰", label: "Financeiro" },
   ],
 };
 

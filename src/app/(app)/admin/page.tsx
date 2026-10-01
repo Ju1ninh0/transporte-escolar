@@ -11,7 +11,9 @@ export default function MotoristasPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Motoristas</h1>
-        <p className="text-slate-500">Motoristas cadastrados no sistema.</p>
+        <p className="text-slate-500">
+          Motoristas cadastrados no sistema.
+        </p>
       </div>
 
       {loading && <Loading />}
@@ -22,14 +24,27 @@ export default function MotoristasPage() {
         <Empty text="Nenhum motorista cadastrado." />
       )}
 
-      {data?.map((motorista) => (
-        <div key={motorista.id} className="card">
-          <p className="font-semibold">Motorista #{motorista.id}</p>
-          <p className="text-sm text-slate-500">
-            Usuário: #{motorista.usuario_id}
-          </p>
-        </div>
-      ))}
+      <div className="grid gap-3 md:grid-cols-2">
+        {data?.map((motorista) => (
+          <div key={motorista.id} className="card">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-lg font-semibold">{motorista.nome}</p>
+                <p className="text-sm text-slate-500">
+                  {motorista.email}
+                </p>
+                <p className="text-sm text-slate-500">
+                  {motorista.telefone ?? "Telefone não informado"}
+                </p>
+              </div>
+
+              <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
+                Ativo
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

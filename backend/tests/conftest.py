@@ -3,18 +3,18 @@ import os
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["JWT_SECRET"] = "test-secret"
 
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine  # noqa: E402
-from sqlalchemy.orm import sessionmaker  # noqa: E402
-from sqlalchemy.pool import StaticPool  # noqa: E402
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from datetime import date
 
-import app.models  # noqa: E402, F401
-from app.core.security import hash_senha  # noqa: E402
-from app.db.session import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
-from app.models import Aluno, Empresa, Perfil, Responsavel, Usuario  # noqa: E402
+import app.models  # noqa: F401
+from app.core.security import hash_senha
+from app.db.session import Base, get_db
+from app.main import app
+from app.models import Aluno, Empresa, Perfil, Responsavel, Usuario
 
 SENHA = "senha-teste-123"
 

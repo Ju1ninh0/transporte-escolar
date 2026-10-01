@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.core.security import hash_senha
 from app.db.session import SessionLocal
+from app.seed_financeiro import seed_financeiro
 from app.models import (
     Aluno, Configuracao, Empresa, Frequencia, Gravidade, Mensalidade, Motorista,
     Ocorrencia, Parada, Perfil, RegraReincidencia, Responsavel, Rota, RotaAluno,
@@ -31,6 +32,8 @@ def seed() -> None:
         raise SystemExit("Seed bloqueado em produção.")
     with SessionLocal() as db:
         if db.scalar(select(Usuario.id).where(Usuario.email == "admin@demo.com")):
+            seed_financeiro(db, db.scalar(select(Empresa).where(Empresa.nome == "Transporte Demo")))
+            db.commit()
             print("Seed já aplicado.")
             return
         emp = Empresa(nome="Transporte Demo")
@@ -90,6 +93,7 @@ def seed() -> None:
                 "recebedor": "Transporte Demo", "tipo_chave": "EMAIL",
                 "chave": "pix@demo.com", "mensagem": "Mensalidade"}),
         ])
+        seed_financeiro(db, emp)
         db.commit()
         print("Seed aplicado. Senha de todos (SOMENTE DESENVOLVIMENTO):", SENHA_DEV)
 

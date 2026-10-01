@@ -15,16 +15,20 @@ class ResponsavelCreate(PessoaCreate):
 
 
 class ResponsavelOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     id: int
     usuario_id: int
+    nome: str
+    email: EmailStr
+    telefone: str | None
     endereco: str | None
 
 
 class MotoristaOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     id: int
     usuario_id: int
+    nome: str
+    email: EmailStr
+    telefone: str | None
 
 
 class AlunoCreate(BaseModel):

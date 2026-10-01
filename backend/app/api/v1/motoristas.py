@@ -20,9 +20,32 @@ def criar(dados: PessoaCreate, admin: Usuario = Depends(admin_only), db: Session
     mot = Motorista(empresa_id=admin.empresa_id, usuario_id=user.id)
     db.add(mot)
     db.commit()
-    return mot
+    db.refresh(mot)
+
+    return {
+        "id": mot.id,
+        "usuario_id": user.id,
+        "nome": user.nome,
+        "email": user.email,
+        "telefone": user.telefone,
+    }
 
 
 @router.get("", response_model=list[MotoristaOut])
 def listar(admin: Usuario = Depends(admin_only), db: Session = Depends(get_db)):
-    return db.scalars(select(Motorista).where(Motorista.empresa_id == admin.empresa_id)).all()
+    stmt = (
+        select(Motorista, Usuario)
+        .join(Usuario, Usuario.id == Motorista.usuario_id)
+        .where(Motorista.empresa_id == admin.empresa_id)
+    )
+
+    return [
+        {
+            "id": motorista.id,
+            "usuario_id": usuario.id,
+            "nome": usuario.nome,
+            "email": usuario.email,
+            "telefone": usuario.telefone,
+        }
+        for motorista, usuario in db.execute(stmt).all()
+    ]
