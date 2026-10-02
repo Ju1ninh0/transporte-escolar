@@ -91,3 +91,49 @@ export type Responsavel = {
   usuario_id: number;
   endereco: string | null;
 };
+
+export type Gravidade = "LEVE" | "MEDIA" | "GRAVE";
+
+export const GRAVIDADES: { value: Gravidade; label: string }[] = [
+  { value: "LEVE", label: "Leve" },
+  { value: "MEDIA", label: "Média" },
+  { value: "GRAVE", label: "Grave" },
+];
+
+export type TipoOcorrencia = { id: number; nome: string; ativo: boolean };
+
+export type Ocorrencia = {
+  id: number;
+  aluno_id: number;
+  aluno_nome: string;
+  tipo_id: number;
+  tipo_nome: string;
+  data: string;
+  gravidade: Gravidade;
+  descricao: string;
+  consequencia: string | null;
+  registrado_por: number;
+  registrado_por_nome: string;
+  created_at: string;
+};
+
+export type SugestaoConsequencia = {
+  aluno_id: number;
+  numero_ocorrencia: number;
+  consequencia: string | null;
+};
+
+export type PixConfig = {
+  recebedor: string;
+  tipo_chave: string;
+  chave: string;
+  mensagem: string;
+};
+
+export type RegraReincidencia = { numero_ocorrencia: number; consequencia: string };
+
+export type Configuracoes = {
+  pix: Partial<PixConfig> | null;
+  proximidade_metros: number | null;
+  regras_reincidencia: RegraReincidencia[];
+};
