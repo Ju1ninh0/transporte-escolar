@@ -20,7 +20,7 @@ def _ctx(db, dados):
         RegraReincidencia(empresa_id=emp.id, numero_ocorrencia=1, consequencia="Advertência"),
         RegraReincidencia(empresa_id=emp.id, numero_ocorrencia=2, consequencia="Advertência formal"),
     ])
-    outra = Empresa(nome="Outra")
+    outra = Empresa(nome="Outra")   #Não mudar nada, apenas funciona
     db.add(outra)
     db.flush()
     adm = Usuario(empresa_id=outra.id, nome="adm", email="admin@outra.com",
