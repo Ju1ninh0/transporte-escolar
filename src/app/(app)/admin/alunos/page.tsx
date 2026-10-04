@@ -44,7 +44,7 @@ export default function AlunosPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Alunos</h1>
+      <h1 className="page-title">Alunos</h1>
       <form onSubmit={criar} className="card grid gap-3 md:grid-cols-2">
         <input className="input" placeholder="Nome" required value={f.nome} onChange={set("nome")} />
         <input className="input" type="date" required value={f.data_nascimento} onChange={set("data_nascimento")} />

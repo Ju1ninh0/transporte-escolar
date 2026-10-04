@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 from app.models.mixins import agora
 
+#Não mudar nada aqui pelo amor de Deus
 
 class Notificacao(Base):
     __tablename__ = "notificacoes"

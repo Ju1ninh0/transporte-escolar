@@ -32,7 +32,7 @@ export default function ResponsaveisPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Responsáveis</h1>
+      <h1 className="page-title">Responsáveis</h1>
       <form onSubmit={criar} className="card grid gap-3 md:grid-cols-2">
         <input className="input" placeholder="Nome" required value={f.nome} onChange={set("nome")} />
         <input className="input" type="email" placeholder="E-mail" required value={f.email} onChange={set("email")} />

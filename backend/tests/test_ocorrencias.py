@@ -5,13 +5,12 @@ from sqlalchemy import select
 from app.core.security import hash_senha
 from app.models import Aluno, Empresa, Perfil, RegraReincidencia, Responsavel, TipoOcorrencia, Usuario
 
-SENHA = "senha-teste-123"  # mesma do conftest
+SENHA = "senha-teste-123"  # mesma do conf
 URL = "/api/v1/ocorrencias"
 URL_TIPOS = "/api/v1/tipos-ocorrencia"
 
 
 def _ctx(db, dados):
-    """Completa o `dados` do conftest: tipos, regras e uma 2ª empresa."""
     emp = db.scalar(select(Empresa).where(Empresa.nome == "Teste"))
     tipo = TipoOcorrencia(empresa_id=emp.id, nome="Comportamento")
     inativo = TipoOcorrencia(empresa_id=emp.id, nome="Antigo", ativo=False)

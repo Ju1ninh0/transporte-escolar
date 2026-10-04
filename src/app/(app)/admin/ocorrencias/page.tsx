@@ -26,9 +26,9 @@ const vazio = {
 };
 
 const corGravidade: Record<Gravidade, string> = {
-  LEVE: "bg-slate-100 text-slate-700",
-  MEDIA: "bg-amber-100 text-amber-800",
-  GRAVE: "bg-red-100 text-red-800",
+  LEVE: "badge-neutral",
+  MEDIA: "badge-warn",
+  GRAVE: "badge-danger",
 };
 
 export default function OcorrenciasPage() {
@@ -138,7 +138,7 @@ export default function OcorrenciasPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Ocorrências</h1>
+      <h1 className="page-title">Ocorrências</h1>
 
       <form onSubmit={criar} className="card grid gap-3 md:grid-cols-2">
         <h2 className="font-semibold md:col-span-2">Nova ocorrência</h2>
@@ -182,14 +182,14 @@ export default function OcorrenciasPage() {
           onChange={set("consequencia")}
         />
         {sugestao && (
-          <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm md:col-span-2">
+          <div className="callout md:col-span-2">
             Esta será a <strong>{sugestao.numero_ocorrencia}ª</strong> ocorrência do aluno.{" "}
             {sugestao.consequencia ? (
               <>
                 Sugestão: <strong>{sugestao.consequencia}</strong>{" "}
                 <button
                   type="button"
-                  className="text-emerald-700 underline"
+                  className="link"
                   onClick={() => setF({ ...f, consequencia: sugestao.consequencia ?? "" })}
                 >
                   usar sugestão
@@ -266,7 +266,7 @@ export default function OcorrenciasPage() {
             <p className="font-semibold">
               {o.aluno_nome} · {o.tipo_nome}
             </p>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${corGravidade[o.gravidade]}`}>
+            <span className={`badge ${corGravidade[o.gravidade]}`}>
               {GRAVIDADES.find((g) => g.value === o.gravidade)?.label}
             </span>
           </div>
@@ -294,7 +294,7 @@ export default function OcorrenciasPage() {
               <span className="text-slate-500">Consequência: </span>
               {o.consequencia ?? "—"}{" "}
               <button
-                className="text-emerald-700 underline"
+                className="link"
                 onClick={() => setEditando({ id: o.id, texto: o.consequencia ?? "" })}
               >
                 editar

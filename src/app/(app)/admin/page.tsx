@@ -71,7 +71,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Configurações</h1>
+      <h1 className="page-title">Configurações</h1>
       {cfg.loading && !cfg.data && <Loading />}
       {cfg.error && <ErrorBox message={cfg.error} onRetry={cfg.reload} />}
 

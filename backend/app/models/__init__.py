@@ -18,13 +18,14 @@ from app.models.operacao import (
     TipoOcorrencia,
 )
 from app.models.pessoas import Aluno, Motorista, Responsavel
+from app.models.presenca import PresencaViagem
 from app.models.sistema import AuditLog, Configuracao, Notificacao
 from app.models.usuario import Empresa, Perfil, RefreshToken, Usuario
 
 __all__ = [
     "Aluno", "AuditLog", "Configuracao", "Empresa", "Frequencia", "Gravidade",
     "HistoricoRota", "Localizacao", "Mensalidade", "Motorista", "Notificacao",
-    "Ocorrencia", "Pagamento", "Parada", "Perfil", "RefreshToken", "RegraReincidencia",
+    "Ocorrencia", "Pagamento", "Parada", "Perfil", "PresencaViagem", "RefreshToken", "RegraReincidencia",
     "Responsavel", "Rota", "RotaAluno", "StatusExecucao", "StatusFrequencia",
     "StatusMensalidade", "StatusRota", "TipoOcorrencia", "Usuario", "Veiculo",
 ]

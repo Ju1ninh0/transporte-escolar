@@ -49,10 +49,10 @@ const STATUS_LABEL: Record<StatusMensalidade, string> = {
 };
 
 const STATUS_COR: Record<StatusMensalidade, string> = {
-  PENDENTE: "bg-amber-100 text-amber-700",
-  PAGO: "bg-emerald-100 text-emerald-700",
-  ATRASADO: "bg-red-100 text-red-700",
-  CANCELADO: "bg-slate-200 text-slate-600",
+  PENDENTE: "badge-warn",
+  PAGO: "badge-ok",
+  ATRASADO: "badge-danger",
+  CANCELADO: "badge-neutral",
 };
 
 const METODOS: { valor: MetodoPagamento; label: string }[] = [
@@ -69,7 +69,7 @@ const btnLink = "text-sm font-medium text-slate-700 underline";
 
 function Selo({ status }: { status: StatusMensalidade }) {
   return (
-    <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_COR[status]}`}>
+    <span className={`badge ${STATUS_COR[status]}`}>
       {STATUS_LABEL[status]}
     </span>
   );
@@ -391,7 +391,7 @@ export default function FinanceiroPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Financeiro</h1>
+          <h1 className="page-title">Financeiro</h1>
           <p className="text-slate-500">Mensalidades e pagamentos.</p>
         </div>
         <button className={btnPrimario} onClick={() => setNovaAberta(true)}>

@@ -50,7 +50,7 @@ export default function MotoristasPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Motoristas</h1>
+          <h1 className="page-title">Motoristas</h1>
           <p className="text-slate-500">
             Motoristas cadastrados no sistema.
           </p>
@@ -58,7 +58,7 @@ export default function MotoristasPage() {
 
         <button
           type="button"
-          className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700"
+          className="btn"
           onClick={() => setMostrarForm((valor) => !valor)}
         >
           {mostrarForm ? "Cancelar" : "+ Novo motorista"}
@@ -118,7 +118,7 @@ export default function MotoristasPage() {
           <button
             type="submit"
             disabled={salvando}
-            className="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="w-full btn"
           >
             {salvando ? "Cadastrando..." : "Cadastrar motorista"}
           </button>
@@ -147,7 +147,7 @@ export default function MotoristasPage() {
                 </p>
               </div>
 
-              <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
+              <span className="badge badge-ok">
                 Ativo
               </span>
             </div>

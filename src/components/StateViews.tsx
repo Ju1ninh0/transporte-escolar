@@ -1,21 +1,26 @@
 export function Loading() {
   return (
-    <div role="status" className="py-10 text-center text-slate-500">
+    <div role="status" className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
       Carregando…
     </div>
   );
 }
 
 export function Empty({ text }: { text: string }) {
-  return <div className="card py-8 text-center text-slate-500">{text}</div>;
+  return (
+    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
+      {text}
+    </div>
+  );
 }
 
 export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="card border-red-200 bg-red-50 text-red-800">
+    <div role="alert" className="callout callout-danger space-y-3 py-3">
       <p>{message}</p>
       {onRetry && (
-        <button className="btn-ghost mt-3" onClick={onRetry}>
+        <button className="btn-ghost" onClick={onRetry}>
           Tentar novamente
         </button>
       )}
@@ -25,7 +30,7 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
 
 export function Success({ text }: { text: string }) {
   return (
-    <div role="status" className="rounded-xl bg-emerald-50 px-3 py-2 text-emerald-800">
+    <div role="status" className="callout callout-ok">
       {text}
     </div>
   );
