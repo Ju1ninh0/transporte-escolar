@@ -6,6 +6,7 @@ from app.api.deps import admin_only
 from app.db.session import get_db
 from app.models import HistoricoRota, Motorista, Rota, StatusExecucao, Usuario
 from app.schemas.viagem import ViagemOut
+from app.services.notificacoes import executar_seguro, notificar_fim
 from app.services.viagem import finalizar, viagem_dict
 
 router = APIRouter(prefix="/viagens", tags=["viagens"])
@@ -47,4 +48,5 @@ def encerrar(viagem_id: int, db: Session = Depends(get_db), user: Usuario = Depe
     if viagem.status != StatusExecucao.EM_ANDAMENTO:
         raise HTTPException(status.HTTP_409_CONFLICT, "Viagem já encerrada")
     finalizar(db, viagem)
+    executar_seguro(db, notificar_fim, viagem.rota_id, rota_nome)
     return viagem_dict(viagem, rota_nome, mot_nome)

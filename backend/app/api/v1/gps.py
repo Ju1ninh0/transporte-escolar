@@ -20,6 +20,7 @@ from app.schemas.gps import (
     ViagemAtivaOut,
 )
 from app.services.gps import Assinante, hub, rotas_visiveis, viagens_ativas
+from app.services.notificacoes import executar_seguro, notificar_proximidade
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["gps"])
@@ -86,6 +87,17 @@ def enviar_localizacao(
         {"tipo": "localizacao", "rota_id": viagem.rota_id, **saida},
         user.empresa_id,
         viagem.rota_id,
+    )
+    rota = db.get(Rota, viagem.rota_id)
+    executar_seguro(
+        db,
+        notificar_proximidade,
+        viagem.id,
+        viagem.rota_id,
+        rota.nome if rota else "",
+        user.empresa_id,
+        body.latitude,
+        body.longitude,
     )
     return saida
 

@@ -1,168 +1,197 @@
 "use client";
-import { useEffect, useState } from "react";
-import { ErrorBox, Loading, Success } from "@/components/StateViews";
-import { api } from "@/lib/api";
-import type { Configuracoes, PixConfig } from "@/lib/types";
+import Link from "next/link";
+import { useEffect } from "react";
+import { ErrorBox, Loading } from "@/components/StateViews";
+import { fmtData, GRAVIDADES, type Gravidade, type ViagemAtiva } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 
-type Msg = { ok: boolean; text: string } | null;
+type Dashboard = {
+  alunos_ativos: number;
+  responsaveis: number;
+  motoristas: number;
+  veiculos_ativos: number;
+  rotas_ativas: number;
+  viagens_em_andamento: number;
+  ocorrencias_30_dias: number;
+  ocorrencias_recentes: { id: number; aluno_nome: string; tipo_nome: string; data: string; gravidade: Gravidade }[];
+};
 
-const TIPOS_CHAVE = ["CPF", "CNPJ", "EMAIL", "TELEFONE", "ALEATORIA"];
-const pixVazio: PixConfig = { recebedor: "", tipo_chave: "CPF", chave: "", mensagem: "" };
+type ResumoFin = { total_previsto: string; total_recebido: string; total_pendente: string; total_atrasado: string };
 
-function Aviso({ msg }: { msg: Msg }) {
-  if (!msg) return null;
-  return msg.ok ? <Success text={msg.text} /> : <p role="alert" className="text-red-700">{msg.text}</p>;
+const brl = (v: string | number) => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const COR_GRAVIDADE: Record<Gravidade, string> = { LEVE: "badge-neutral", MEDIA: "badge-warn", GRAVE: "badge-danger" };
+
+const ATALHOS = [
+  { href: "/admin/alunos", titulo: "Cadastrar aluno", texto: "Novo aluno e responsável" },
+  { href: "/admin/rotas", titulo: "Montar rota", texto: "Paradas, van e motorista" },
+  { href: "/admin/comunicados", titulo: "Enviar aviso", texto: "Fale com os responsáveis" },
+  { href: "/admin/ocorrencias", titulo: "Registrar ocorrência", texto: "Com sugestão de consequência" },
+  { href: "/admin/financeiro", titulo: "Mensalidades", texto: "Lançar e dar baixa" },
+  { href: "/admin/configuracoes", titulo: "Configurações", texto: "PIX e aviso de proximidade" },
+];
+
+function Numero({ rotulo, valor, href }: { rotulo: string; valor: number; href: string }) {
+  return (
+    <Link href={href} className="card block transition hover:bg-slate-50">
+      <p className="text-sm text-slate-500">{rotulo}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight">{valor}</p>
+    </Link>
+  );
 }
 
-export default function ConfiguracoesPage() {
-  const cfg = useApi<Configuracoes>("/configuracoes");
+export default function PainelPage() {
+  const painel = useApi<Dashboard>("/dashboard");
+  const fin = useApi<ResumoFin>("/financeiro/resumo");
+  const viagens = useApi<ViagemAtiva[]>("/viagens/ativas");
 
-  const [pix, setPix] = useState<PixConfig>(pixVazio);
-  const [metros, setMetros] = useState("");
-  const [regras, setRegras] = useState<Record<number, string>>({});
-  const [msgGeral, setMsgGeral] = useState<Msg>(null);
-  const [msgRegra, setMsgRegra] = useState<(Msg & { numero: number }) | null>(null);
-
-  // Preenche os formulários quando os dados chegam
+  const recarregarViagens = viagens.reload;
+  const recarregarPainel = painel.reload;
   useEffect(() => {
-    if (!cfg.data) return;
-    setPix({ ...pixVazio, ...cfg.data.pix });
-    setMetros(cfg.data.proximidade_metros?.toString() ?? "");
-    setRegras(Object.fromEntries(cfg.data.regras_reincidencia.map((r) => [r.numero_ocorrencia, r.consequencia])));
-  }, [cfg.data]);
+    const t = setInterval(() => {
+      recarregarViagens();
+      recarregarPainel();
+    }, 15000);
+    return () => clearInterval(t);
+  }, [recarregarViagens, recarregarPainel]);
 
-  const setP = (k: keyof PixConfig) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setPix({ ...pix, [k]: e.target.value });
-
-  async function salvarGeral(e: React.FormEvent) {
-    e.preventDefault();
-    setMsgGeral(null);
-    const body: Record<string, unknown> = {};
-    // O PIX só é enviado se estiver preenchido (o backend exige recebedor e chave)
-    if (pix.recebedor.trim() || pix.chave.trim()) body.pix = pix;
-    if (metros.trim()) body.proximidade_metros = Number(metros);
-    if (Object.keys(body).length === 0) {
-      setMsgGeral({ ok: false, text: "Nada para salvar." });
-      return;
-    }
-    try {
-      await api("/configuracoes", { method: "PATCH", body: JSON.stringify(body) });
-      setMsgGeral({ ok: true, text: "Configurações salvas." });
-      cfg.reload();
-    } catch (err) {
-      setMsgGeral({ ok: false, text: (err as Error).message });
-    }
-  }
-
-  async function salvarRegra(numero: number) {
-    setMsgRegra(null);
-    try {
-      await api(`/configuracoes/regras-reincidencia/${numero}`, {
-        method: "PATCH",
-        body: JSON.stringify({ consequencia: regras[numero] ?? "" }),
-      });
-      setMsgRegra({ ok: true, text: "Regra salva.", numero });
-      cfg.reload();
-    } catch (err) {
-      setMsgRegra({ ok: false, text: (err as Error).message, numero });
-    }
-  }
+  const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const previsto = Number(fin.data?.total_previsto ?? 0);
+  const recebido = Number(fin.data?.total_recebido ?? 0);
+  const pct = previsto > 0 ? Math.min(100, Math.round((recebido / previsto) * 100)) : 0;
 
   return (
-    <div className="space-y-4">
-      <h1 className="page-title">Configurações</h1>
-      {cfg.loading && !cfg.data && <Loading />}
-      {cfg.error && <ErrorBox message={cfg.error} onRetry={cfg.reload} />}
+    <div className="space-y-8">
+      <div>
+        <h1 className="page-title">Painel</h1>
+        <p className="mt-1 text-sm capitalize text-slate-500">{hoje}</p>
+      </div>
 
-      {cfg.data && (
-        <>
-          <form onSubmit={salvarGeral} className="card grid gap-3 md:grid-cols-2">
-            <h2 className="font-semibold md:col-span-2">PIX para pagamentos</h2>
-            <input
-              className="input"
-              maxLength={120}
-              placeholder="Nome do recebedor"
-              value={pix.recebedor}
-              onChange={setP("recebedor")}
-            />
-            <select className="input" value={pix.tipo_chave} onChange={setP("tipo_chave")}>
-              {TIPOS_CHAVE.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <input
-              className="input md:col-span-2"
-              maxLength={140}
-              placeholder="Chave PIX"
-              value={pix.chave}
-              onChange={setP("chave")}
-            />
-            <input
-              className="input md:col-span-2"
-              maxLength={140}
-              placeholder="Mensagem (opcional)"
-              value={pix.mensagem}
-              onChange={setP("mensagem")}
-            />
+      {painel.loading && !painel.data && <Loading />}
+      {painel.error && <ErrorBox message={painel.error} onRetry={painel.reload} />}
 
-            <h2 className="mt-2 font-semibold md:col-span-2">Aproximação da van</h2>
-            <label className="md:col-span-2">
-              <span className="mb-1 block text-sm text-slate-600">Distância para avisar o responsável (metros)</span>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                max={100000}
-                placeholder="Ex.: 500"
-                value={metros}
-                onChange={(e) => setMetros(e.target.value)}
-              />
-            </label>
+      {painel.data && (
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Numero rotulo="Alunos ativos" valor={painel.data.alunos_ativos} href="/admin/alunos" />
+          <Numero rotulo="Rotas ativas" valor={painel.data.rotas_ativas} href="/admin/rotas" />
+          <Numero rotulo="Veículos ativos" valor={painel.data.veiculos_ativos} href="/admin/veiculos" />
+          <Numero rotulo="Viagens agora" valor={painel.data.viagens_em_andamento} href="/admin/mapa" />
+        </section>
+      )}
 
-            <button className="btn md:col-span-2">Salvar configurações</button>
-            <div className="md:col-span-2">
-              <Aviso msg={msgGeral} />
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-semibold">Financeiro do mês</h2>
+          <Link href="/admin/financeiro" className="link text-sm">
+            Ver mensalidades
+          </Link>
+        </div>
+        {fin.loading && !fin.data && <Loading />}
+        {fin.error && <ErrorBox message={fin.error} onRetry={fin.reload} />}
+        {fin.data && (
+          <div className="card space-y-4">
+            <div>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="text-slate-500">Recebido de {brl(previsto)} previstos</span>
+                <span className="font-medium">{pct}%</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: `${pct}%` }} />
+              </div>
             </div>
-          </form>
+            <dl className="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <dt className="text-slate-500">Recebido</dt>
+                <dd className="mt-0.5 font-semibold">{brl(fin.data.total_recebido)}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">A vencer</dt>
+                <dd className="mt-0.5 font-semibold">{brl(fin.data.total_pendente)}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Atrasado</dt>
+                <dd className={`mt-0.5 font-semibold ${Number(fin.data.total_atrasado) > 0 ? "text-red-700" : ""}`}>
+                  {brl(fin.data.total_atrasado)}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        )}
+      </section>
 
-          <section className="card space-y-3">
-            <h2 className="font-semibold">Regras de reincidência</h2>
-            <p className="text-sm text-slate-600">
-              A consequência sugerida ao registrar uma ocorrência, conforme o número de ocorrências do aluno.
-            </p>
-            {cfg.data.regras_reincidencia.length === 0 && (
-              <p className="text-slate-500">Nenhuma regra cadastrada.</p>
-            )}
-            {cfg.data.regras_reincidencia.map((r) => (
-              <div key={r.numero_ocorrencia} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-20 shrink-0 text-sm font-semibold">{r.numero_ocorrencia}ª ocorr.</span>
-                  <input
-                    className="input flex-1"
-                    maxLength={120}
-                    value={regras[r.numero_ocorrencia] ?? ""}
-                    onChange={(e) => setRegras({ ...regras, [r.numero_ocorrencia]: e.target.value })}
-                  />
-                  <button
-                    className="btn-ghost"
-                    disabled={
-                      !(regras[r.numero_ocorrencia] ?? "").trim() ||
-                      regras[r.numero_ocorrencia] === r.consequencia
-                    }
-                    onClick={() => salvarRegra(r.numero_ocorrencia)}
-                  >
-                    Salvar
-                  </button>
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-semibold">Viagens em andamento</h2>
+          <Link href="/admin/mapa" className="link text-sm">
+            Abrir mapa
+          </Link>
+        </div>
+        {viagens.data && viagens.data.length === 0 && (
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+            Nenhuma viagem em andamento agora.
+          </p>
+        )}
+        <div className="space-y-2">
+          {viagens.data?.map((v) => (
+            <div key={v.viagem_id} className="card flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate font-medium">{v.rota_nome}</p>
+                <p className="truncate text-sm text-slate-500">
+                  {v.veiculo_apelido ?? "Sem veículo"} · {v.motorista_nome ?? "Sem motorista"}
+                </p>
+              </div>
+              <span className={`badge gap-1.5 ${v.posicao ? "badge-ok" : "badge-neutral"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${v.posicao ? "bg-emerald-500" : "bg-slate-400"}`} />
+                {v.posicao ? "Transmitindo" : "Sem sinal"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-semibold">Ocorrências recentes</h2>
+          <Link href="/admin/ocorrencias" className="link text-sm">
+            Ver todas
+          </Link>
+        </div>
+        {painel.data && painel.data.ocorrencias_recentes.length === 0 && (
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+            Nenhuma ocorrência registrada.
+          </p>
+        )}
+        {painel.data && painel.data.ocorrencias_recentes.length > 0 && (
+          <div className="card divide-y divide-slate-100 p-0">
+            {painel.data.ocorrencias_recentes.map((o) => (
+              <div key={o.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{o.aluno_nome}</p>
+                  <p className="truncate text-sm text-slate-500">
+                    {o.tipo_nome} · {fmtData(o.data)}
+                  </p>
                 </div>
-                {msgRegra?.numero === r.numero_ocorrencia && <Aviso msg={msgRegra} />}
+                <span className={`badge ${COR_GRAVIDADE[o.gravidade]}`}>{GRAVIDADES.find((g) => g.value === o.gravidade)?.label}</span>
               </div>
             ))}
-          </section>
-        </>
-      )}
+          </div>
+        )}
+        {painel.data && (
+          <p className="text-xs text-slate-500">{painel.data.ocorrencias_30_dias} ocorrência(s) nos últimos 30 dias.</p>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">Atalhos</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {ATALHOS.map((a) => (
+            <Link key={a.href} href={a.href} className="card block transition hover:bg-slate-50">
+              <p className="font-medium">{a.titulo}</p>
+              <p className="mt-0.5 text-sm text-slate-500">{a.texto}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

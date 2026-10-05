@@ -1,29 +1,57 @@
 "use client";
 import { Bus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Loading } from "@/components/StateViews";
 import { useAuth } from "@/lib/auth";
+import { homePorPerfil } from "@/lib/types";
+
+function mensagemAmigavel(erro: unknown) {
+  const texto = erro instanceof Error ? erro.message : "";
+  if (texto.includes("Invalid login credentials")) {
+    return "E-mail ou senha incorretos. Confira e tente de novo.";
+  }
+  if (texto.includes("Email not confirmed")) {
+    return "Seu e-mail ainda não foi confirmado. Veja sua caixa de entrada.";
+  }
+  if (texto.includes("Perfil do usuário não encontrado")) {
+    return "Não encontramos o perfil dessa conta. Fale com a administração.";
+  }
+  if (texto.toLowerCase().includes("rate limit") || texto.includes("too many")) {
+    return "Muitas tentativas seguidas. Aguarde um pouco e tente novamente.";
+  }
+  return "Não foi possível entrar agora. Tente novamente em instantes.";
+}
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace(homePorPerfil[user.perfil]);
+    }
+  }, [loading, user, router]);
+
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setErro(null);
     try {
-      await login(email, senha);
-      router.replace("/");
+      const usuario = await login(email.trim(), senha);
+      router.replace(homePorPerfil[usuario.perfil]);
     } catch (err) {
-      setErro((err as Error).message);
-    } finally {
+      setErro(mensagemAmigavel(err));
       setBusy(false);
     }
+  }
+
+  if (loading || user) {
+    return <Loading />;
   }
 
   return (
@@ -35,7 +63,7 @@ export default function LoginPage() {
           </span>
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Transporte Escolar</h1>
-            <p className="mt-1 text-sm text-slate-500">Entre com a sua conta para continuar</p>
+            <p className="mt-1 text-sm text-slate-500">Que bom ter você de volta. Entre com a sua conta para continuar.</p>
           </div>
         </div>
         <form onSubmit={entrar} className="card space-y-4 p-6">

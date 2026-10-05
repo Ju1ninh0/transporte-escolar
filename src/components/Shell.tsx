@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { useAuth } from "@/lib/auth";
 import type { Perfil } from "@/lib/types";
+import { useAvisosNaoLidas } from "@/lib/useAvisos";
 
 type Item = { href: string; label: string; icon: LucideIcon };
 
@@ -57,8 +59,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const path = usePathname();
   const router = useRouter();
+  const naoLidas = useAvisosNaoLidas(user?.perfil === "RESPONSAVEL");
   if (!user) return null;
   const items = MENU[user.perfil];
+  const contar = (href: string) => (href === "/responsavel/avisos" ? naoLidas : 0);
 
   const ativo = (href: string) => (HOMES.includes(href) ? path === href : path === href || path.startsWith(`${href}/`));
 
@@ -95,6 +99,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               >
                 <Icon className={`h-4 w-4 ${on ? "text-slate-900" : "text-slate-400"}`} />
                 {i.label}
+                {contar(i.href) > 0 && <span className="badge badge-info ml-auto">{contar(i.href)}</span>}
               </Link>
             );
           })}
@@ -117,12 +122,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </button>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 pb-24 pt-5 md:ml-60 md:max-w-none md:px-8 md:pb-10 md:pt-8">
-        <div className="mx-auto max-w-4xl">{children}</div>
+      <main className="mx-auto max-w-4xl px-4 pb-28 pt-5 md:ml-60 md:max-w-none md:px-8 md:pb-10 md:pt-8">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <InstallPrompt />
+          {children}
+        </div>
       </main>
 
       {/* Navegação inferior (celular) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex overflow-x-auto border-t border-slate-200 bg-white/95 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex overflow-x-auto border-t pb-[env(safe-area-inset-bottom)] border-slate-200 bg-white/95 backdrop-blur md:hidden">
         {items.map((i) => {
           const Icon = i.icon;
           const on = ativo(i.href);
@@ -134,7 +142,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 on ? "border-slate-900 font-medium text-slate-900" : "border-transparent text-slate-500"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <span className="relative">
+                <Icon className="h-5 w-5" />
+                {contar(i.href) > 0 && (
+                  <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-medium text-white">
+                    {contar(i.href)}
+                  </span>
+                )}
+              </span>
               {i.label}
             </Link>
           );

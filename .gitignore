@@ -9,3 +9,9 @@ node_modules/
 pgdata/
 
 .idea/
+.env.local
+.env.*.local
+.env.production
+*.pem
+.vercel/
+.backup-auth/

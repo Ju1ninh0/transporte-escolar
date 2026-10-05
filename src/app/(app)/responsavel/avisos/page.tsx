@@ -1,9 +1,17 @@
 "use client";
 import { useState } from "react";
+import { PermissaoNotificacao } from "@/components/PermissaoNotificacao";
 import { Empty, ErrorBox, Loading } from "@/components/StateViews";
 import { api } from "@/lib/api";
 import type { Aviso } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
+
+const ROTULO_TIPO: Record<string, string> = {
+  COMUNICADO: "Aviso da empresa",
+  VIAGEM_INICIADA: "Viagem",
+  VIAGEM_ENCERRADA: "Viagem",
+  VAN_PROXIMA: "Van se aproximando",
+};
 
 const dataHora = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -45,6 +53,7 @@ export default function AvisosResponsavel() {
           </button>
         )}
       </div>
+      <PermissaoNotificacao />
       {erro && (
         <p role="alert" className="text-red-700">
           {erro}
@@ -66,7 +75,8 @@ export default function AvisosResponsavel() {
             </p>
             <span className="shrink-0 text-xs text-slate-500">{dataHora(a.created_at)}</span>
           </div>
-          <p className="whitespace-pre-line">{a.mensagem}</p>
+          <p className="whitespace-pre-line text-sm text-slate-700">{a.mensagem}</p>
+          <p className="text-xs text-slate-400">{ROTULO_TIPO[a.tipo] ?? "Aviso"}</p>
         </button>
       ))}
     </div>

@@ -19,6 +19,7 @@ from app.models import (
 from app.schemas.frota import ParadaOut
 from app.schemas.viagem import MotoristaRotaDetalheOut, MotoristaRotaOut, ViagemOut
 from app.services.frota import alunos_da_rota, viagem_em_andamento
+from app.services.notificacoes import executar_seguro, notificar_fim, notificar_inicio
 from app.services.viagem import finalizar, viagem_dict, viagens_em_andamento
 
 router = APIRouter(prefix="/motorista", tags=["motorista"])
@@ -116,6 +117,7 @@ def iniciar_viagem(
     db.add(viagem)
     db.commit()
     db.refresh(viagem)
+    executar_seguro(db, notificar_inicio, viagem.id, rota.id, rota.nome)
     return viagem_dict(viagem, rota.nome, user.nome)
 
 
@@ -135,4 +137,5 @@ def encerrar_viagem(
         raise HTTPException(status.HTTP_409_CONFLICT, "Viagem já encerrada")
     finalizar(db, viagem)
     rota = db.get(Rota, viagem.rota_id)
+    executar_seguro(db, notificar_fim, rota.id, rota.nome)
     return viagem_dict(viagem, rota.nome, user.nome)
