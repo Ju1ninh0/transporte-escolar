@@ -21,6 +21,7 @@ class TokenOut(BaseModel):
 class UsuarioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    empresa_id: int
     nome: str
     email: EmailStr
     telefone: str | None

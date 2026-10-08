@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, tokenStore } from "@/lib/api";
+import { api, tokenAtual } from "@/lib/api";
 import type { PosicaoVan, ViagemAtiva } from "@/lib/types";
 
 const WS_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/^http/, "ws");
@@ -57,10 +57,10 @@ export function useViagensAoVivo(caminhoAtivas: string = "/viagens/ativas") {
     let religar: ReturnType<typeof setTimeout> | undefined;
     let ping: ReturnType<typeof setInterval> | undefined;
 
-    function conectar() {
+    async function conectar() {
       if (!ativo) return;
-      const token = tokenStore.get()?.access_token;
-      if (!token) return;
+      const token = await tokenAtual();
+      if (!token || !ativo) return;
       const socket = new WebSocket(`${WS_BASE}/api/v1/ws/viagens`);
       ws = socket;
       socket.onopen = () => {

@@ -2,15 +2,13 @@ import asyncio
 import logging
 
 import anyio.from_thread
-import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import admin_only
+from app.api.deps import admin_only, usuario_do_token
 from app.api.v1.motorista import _motorista, motorista_only
-from app.core.security import decodificar_token
 from app.db.session import get_db
 from app.models import HistoricoRota, Localizacao, Perfil, Rota, StatusExecucao, Usuario
 from app.schemas.gps import (
@@ -135,21 +133,6 @@ def trilha(
 
 
 # ---------------------------------------------------------------------- WebSocket
-def _usuario_do_token(db: Session, token: object) -> Usuario | None:
-    if not isinstance(token, str):
-        return None
-    try:
-        payload = decodificar_token(token)
-    except jwt.PyJWTError:
-        return None
-    if payload.get("type") != "access":
-        return None
-    user = db.get(Usuario, int(payload["sub"]))
-    if user is None or not user.ativo:
-        return None
-    return user
-
-
 async def _fechar(ws: WebSocket, codigo: int) -> None:
     try:
         await ws.close(code=codigo)
@@ -175,7 +158,7 @@ async def acompanhar_viagens(ws: WebSocket, db: Session = Depends(get_db)):
         await _fechar(ws, WS_NAO_AUTENTICADO)
         return
 
-    user = _usuario_do_token(db, msg.get("token") if isinstance(msg, dict) else None)
+    user = usuario_do_token(db, msg.get("token") if isinstance(msg, dict) else None)
     if user is None:
         await _fechar(ws, WS_NAO_AUTENTICADO)
         return

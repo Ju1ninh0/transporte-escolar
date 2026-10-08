@@ -3,19 +3,22 @@ import { Bus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loading } from "@/components/StateViews";
+import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { homePorPerfil } from "@/lib/types";
 
 function mensagemAmigavel(erro: unknown) {
+  // Erros do nosso servidor (sem cadastro, conta inativa, servidor fora do ar...) já vêm com a
+  // mensagem certa: mostramos como estão, sem trocar por um texto genérico.
+  if (erro instanceof ApiError) {
+    return erro.message;
+  }
   const texto = erro instanceof Error ? erro.message : "";
   if (texto.includes("Invalid login credentials")) {
     return "E-mail ou senha incorretos. Confira e tente de novo.";
   }
   if (texto.includes("Email not confirmed")) {
     return "Seu e-mail ainda não foi confirmado. Veja sua caixa de entrada.";
-  }
-  if (texto.includes("Perfil do usuário não encontrado")) {
-    return "Não encontramos o perfil dessa conta. Fale com a administração.";
   }
   if (texto.toLowerCase().includes("rate limit") || texto.includes("too many")) {
     return "Muitas tentativas seguidas. Aguarde um pouco e tente novamente.";
@@ -24,7 +27,7 @@ function mensagemAmigavel(erro: unknown) {
 }
 
 export default function LoginPage() {
-  const { login, user, loading } = useAuth();
+  const { login, user, loading, authError } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -77,7 +80,9 @@ export default function LoginPage() {
             <input id="senha" type="password" required autoComplete="current-password" className="input"
               value={senha} onChange={(e) => setSenha(e.target.value)} />
           </div>
-          {erro && <p role="alert" className="callout callout-danger">{erro}</p>}
+          {(erro ?? authError) && (
+            <p role="alert" className="callout callout-danger">{erro ?? authError}</p>
+          )}
           <button className="btn w-full" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</button>
         </form>
       </div>

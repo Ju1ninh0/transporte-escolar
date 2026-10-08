@@ -8,54 +8,41 @@ import {
   useRef,
   useState,
 } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
+import { ApiError, buscarUsuarioAtual } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import type { Perfil, Usuario } from "@/lib/types";
 
+/**
+ * Supabase Auth = identidade (sessão, login, logout, access token).
+ * Os dados do usuário (perfil, empresa, ativo...) vêm do PostgreSQL via GET /api/v1/auth/me.
+ * O frontend NUNCA consulta tabelas do Supabase para descobrir quem o usuário é.
+ */
 type AuthCtx = {
   user: Usuario | null;
   loading: boolean;
+  /** Motivo pelo qual há sessão mas não há usuário carregado (cadastro, servidor, sessão...). */
+  authError: string | null;
   login: (email: string, senha: string) => Promise<Usuario>;
   logout: () => Promise<void>;
 };
 
 const PERFIS: Perfil[] = ["ADMIN", "MOTORISTA", "RESPONSAVEL"];
 
-function normalizarPerfil(valor: unknown): Perfil | null {
-  const texto = String(valor ?? "").trim().toUpperCase();
-  return PERFIS.find((p) => p === texto) ?? null;
+function validarUsuario(usuario: Usuario): Usuario {
+  if (!PERFIS.includes(usuario.perfil)) {
+    throw new ApiError(500, "O servidor devolveu um perfil desconhecido para a sua conta.");
+  }
+  return usuario;
 }
 
-async function buscarUsuario(authUser: User): Promise<Usuario | null> {
-  const { data, error } = await supabase
-    .from("Usuarios")
-    .select("*")
-    .eq("auth_user_id", authUser.id)
-    .maybeSingle();
+/** 401/403 = a sessão não serve para este sistema; 0/5xx = falha momentânea, mantém a sessão. */
+function erroDefinitivo(erro: unknown): boolean {
+  return erro instanceof ApiError && (erro.status === 401 || erro.status === 403);
+}
 
-  if (error) {
-    console.error("Erro ao buscar perfil:", error);
-    return null;
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  const perfil = normalizarPerfil(data.perfil);
-
-  if (!perfil) {
-    console.error("Perfil desconhecido para o usuário:", data.perfil);
-    return null;
-  }
-
-  return {
-    id: data.id,
-    nome: data.nome,
-    email: authUser.email ?? "",
-    telefone: data.telefone ?? null,
-    perfil,
-  };
+function mensagemDoErro(erro: unknown): string {
+  return erro instanceof Error ? erro.message : "Não foi possível carregar a sua conta.";
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -63,27 +50,36 @@ const Ctx = createContext<AuthCtx | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const authIdAtual = useRef<string | null>(null);
   const entrando = useRef(false);
+  const versao = useRef(0);
 
-  const aplicarSessao = useCallback(async (authUser: User | null) => {
-    if (!authUser) {
+  const aplicarSessao = useCallback(async (sessao: Session | null) => {
+    const minha = ++versao.current;
+
+    if (!sessao) {
       authIdAtual.current = null;
       setUser(null);
       return;
     }
 
-    const usuario = await buscarUsuario(authUser);
-
-    if (!usuario) {
+    try {
+      const usuario = validarUsuario(await buscarUsuarioAtual(sessao.access_token));
+      if (minha !== versao.current) return;
+      authIdAtual.current = sessao.user.id;
+      setAuthError(null);
+      setUser(usuario);
+    } catch (erro) {
+      if (minha !== versao.current) return;
+      console.error("Falha ao carregar o usuário em /auth/me:", erro);
       authIdAtual.current = null;
       setUser(null);
-      await supabase.auth.signOut({ scope: "local" });
-      return;
+      setAuthError(mensagemDoErro(erro));
+      if (erroDefinitivo(erro)) {
+        await supabase.auth.signOut({ scope: "local" });
+      }
     }
-
-    authIdAtual.current = authUser.id;
-    setUser(usuario);
   }, []);
 
   useEffect(() => {
@@ -108,10 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const authUser = sessao?.user ?? null;
-
+      // Não chame métodos do Supabase dentro do callback: adia para fora dele.
       setTimeout(async () => {
-        await aplicarSessao(authUser);
+        await aplicarSessao(sessao);
         if (ativo) {
           setLoading(false);
         }
@@ -126,6 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, senha: string) => {
     entrando.current = true;
+    versao.current++;
+    setAuthError(null);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -137,15 +134,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(error.message);
       }
 
-      if (!data.user) {
-        throw new Error("Usuário não encontrado.");
+      const token = data.session?.access_token;
+
+      if (!token || !data.user) {
+        throw new Error("Não foi possível iniciar a sessão.");
       }
 
-      const usuario = await buscarUsuario(data.user);
+      let usuario: Usuario;
 
-      if (!usuario) {
+      try {
+        usuario = validarUsuario(await buscarUsuarioAtual(token));
+      } catch (erro) {
         await supabase.auth.signOut({ scope: "local" });
-        throw new Error("Perfil do usuário não encontrado.");
+        throw erro;
       }
 
       authIdAtual.current = data.user.id;
@@ -158,16 +159,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    versao.current++;
     try {
       await supabase.auth.signOut({ scope: "local" });
     } finally {
       authIdAtual.current = null;
+      setAuthError(null);
       setUser(null);
     }
   }, []);
 
   return (
-    <Ctx.Provider value={{ user, loading, login, logout }}>
+    <Ctx.Provider value={{ user, loading, authError, login, logout }}>
       {children}
     </Ctx.Provider>
   );

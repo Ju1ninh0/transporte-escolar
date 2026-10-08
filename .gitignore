@@ -15,3 +15,6 @@ pgdata/
 *.pem
 .vercel/
 .backup-auth/
+.backup-ponte-supabase/
+
+.backup-api/

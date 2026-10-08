@@ -2,6 +2,7 @@ export type Perfil = "ADMIN" | "MOTORISTA" | "RESPONSAVEL";
 
 export type Usuario = {
   id: number;
+  empresa_id: number;
   nome: string;
   email: string;
   telefone: string | null;

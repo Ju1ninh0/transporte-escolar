@@ -28,6 +28,7 @@ class Usuario(TimestampMixin, Base):
     nome: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(160), unique=True, index=True)
     telefone: Mapped[str | None] = mapped_column(String(20))
+    auth_user_id: Mapped[str | None] = mapped_column(String(36), unique=True, index=True)
     senha_hash: Mapped[str] = mapped_column(String(255))
     perfil: Mapped[Perfil] = mapped_column(Enum(Perfil, native_enum=False, length=20))
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
